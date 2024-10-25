@@ -1,18 +1,15 @@
-<!-- /pages/index.vue -->
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100">
     <h1 class="text-4xl font-bold">Mastermind</h1>
-    <button @click="$router.push('/multiplayer')" class="btn mt-4">Multiplayer</button>
-    <button @click="$router.push('/ai_game')" class="btn mt-4">Gioca contro l'IA</button>
+    <NuxtLink to="/multiplayer" class="btn mt-4">Multiplayer</NuxtLink>
+    <NuxtLink to="/ai_game" class="btn mt-4">Gioca contro l'IA</NuxtLink>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-
-export default defineComponent({
+export default {
   name: 'IndexPage',
-});
+};
 </script>
 
 <style scoped>

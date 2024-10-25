@@ -1,8 +1,8 @@
 export default {
-  // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
+  // Disable server-side rendering
   ssr: false,
 
-  // Global page headers: https://go.nuxtjs.dev/config-head
+  // Global page headers
   head: {
     title: 'mastermind-game',
     htmlAttrs: {
@@ -19,30 +19,20 @@ export default {
     ]
   },
 
-  // Global CSS: https://go.nuxtjs.dev/config-css
+  // Global CSS (includi il file tailwind qui)
   css: [
+    '@/assets/css/tailwind.css'
   ],
 
-  // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: [
-  ],
-
-  // Auto import components: https://go.nuxtjs.dev/config-components
+  // Auto import components
   components: true,
 
-  // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
+  // Build and dev modules
   buildModules: [
-    // https://go.nuxtjs.dev/typescript
     '@nuxt/typescript-build',
-    // https://go.nuxtjs.dev/tailwindcss
     '@nuxtjs/tailwindcss',
   ],
 
-  // Modules: https://go.nuxtjs.dev/config-modules
-  modules: [
-  ],
-
-  // Build Configuration: https://go.nuxtjs.dev/config-build
-  build: {
-  }
-}
+  // Build configuration
+  build: {},
+};
