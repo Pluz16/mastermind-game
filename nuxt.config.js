@@ -22,6 +22,10 @@ export default {
     '@nuxtjs/tailwindcss',
   ],
 
+  tailwindcss: {
+    viewer: false
+  },
+
   postcss: {
     plugins: {
       tailwindcss: {},
