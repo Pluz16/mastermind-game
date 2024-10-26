@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col items-center min-h-screen bg-gray-100 p-4">
-      <h1 class="text-3xl font-bold mb-6">Mastermind - Modalità Multiplayer</h1>
+      <h1 class="text-3xl font-bold mb-6 text-gray-800">Mastermind - Modalità Multiplayer</h1>
   
       <!-- Messaggio di Turno -->
       <p v-if="turn === 'setup'" class="text-lg text-gray-700">È il turno di Giocatore 1: Seleziona il codice segreto</p>
@@ -9,17 +9,17 @@
   
       <!-- Selezione Modalità -->
       <div v-if="turn === 'modeSelection'" class="flex gap-4 mt-4">
-        <button @click="selectMode(5, 15)" class="btn-large bg-blue-600 text-white">
+        <button @click="selectMode(5, 15)" class="btn-mode bg-blue-600 text-white">
           Modalità 5 Colori - 15 Tentativi
         </button>
-        <button @click="selectMode(8, 25)" class="btn-large bg-green-600 text-white">
+        <button @click="selectMode(8, 25)" class="btn-mode bg-green-600 text-white">
           Modalità 8 Colori - 25 Tentativi
         </button>
       </div>
-
+  
       <div v-if="turn === 'victory'" class="text-4xl font-bold text-green-500 victory-animation mt-8">
-  Congratulazioni! Hai Vinto!
-</div>
+        Congratulazioni! Hai Vinto!
+      </div>
   
       <!-- Selettore dei Colori -->
       <ColorSelector v-if="turn === 'setup' || turn === 'guess'" :colors="availableColors" @colorSelected="selectColor" />
@@ -33,15 +33,15 @@
         ></div>
       </div>
   
-      <!-- Pulsante per Confermare il Turno (solo se i colori sono selezionati) -->
-      <button v-if="currentAttempt.length === 4 && (turn === 'setup' || turn === 'guess')" @click="submitTurn" class="btn mt-4">
+      <!-- Pulsante per Confermare il Turno -->
+      <button v-if="currentAttempt.length === 4 && (turn === 'setup' || turn === 'guess')" @click="submitTurn" class="btn-action mt-4">
         Conferma Turno
       </button>
-
-          <!-- Pulsante per visualizzare il codice segreto nel turno di feedback -->
-    <button v-if="turn === 'feedback'" @click="toggleSecretVisibility" class="btn mt-4">
-      {{ showSecretCode ? "Nascondi Codice" : "Mostra Codice" }}
-    </button>
+  
+      <!-- Pulsante per visualizzare il codice segreto nel turno di feedback -->
+      <button v-if="turn === 'feedback'" @click="toggleSecretVisibility" class="btn-action mt-4">
+        {{ showSecretCode ? "Nascondi Codice" : "Mostra Codice" }}
+      </button>
   
       <!-- Visualizzazione del Codice Segreto (solo durante feedback) -->
       <SecretCodeDisplay :secretCode="secretCode" :showSecretCode="showSecretCode" />
@@ -54,9 +54,13 @@
   
       <!-- Bottoni per Tornare alla Home e Ricominciare -->
       <div class="flex gap-4 mt-6">
-        <button @click="restartGame" class="btn-large bg-red-600 text-white">Ricomincia</button>
-        <NuxtLink to="/" class="btn-large bg-gray-600 text-white">Torna alla Home</NuxtLink>
+        <button @click="restartGame" class="btn-action bg-red-600 text-white">Ricomincia</button>
+        <NuxtLink to="/" class="btn-action bg-gray-600 text-white">Torna alla Home</NuxtLink> <!-- Pulsante per mostrare il regolamento -->
+    <button @click="toggleInfo" class="btn-action bg-blue-500 text-white">Mostra Regolamento</button>
       </div>
+
+      <InfoCard :showInfo="showInfo" @close="toggleInfo" />
+
   
       <p v-if="errorMessage" class="text-red-500 font-semibold mt-4">{{ errorMessage }}</p>
     </div>
@@ -70,10 +74,11 @@
   import ColorSelector from "../components/ColorSelector.vue";
   import SecretCodeDisplay from "../components/SecretCodeDisplay.vue";
   import FeedbackControl from "../components/FeedbackControl.vue";
+  import InfoCard from "../components/InfoCard.vue";
   
   export default defineComponent({
     name: "MultiplayerPage",
-    components: { GameBoard, ColorSelector, SecretCodeDisplay, FeedbackControl },
+    components: { GameBoard, ColorSelector, SecretCodeDisplay, FeedbackControl, InfoCard },
     setup() {
       const maxAttempts = ref(15);
       const attempts = reactive<Array<{ colors: string[]; feedback: string[] }>>([]);
@@ -83,6 +88,7 @@
         const turn = ref<"modeSelection" | "setup" | "guess" | "feedback" | "victory" | "defeat">("modeSelection");
       const showSecretCode = ref(false);
       const errorMessage = ref<string | null>(null);
+      const showInfo = ref(false);
       
   
       // Funzioni per gestire il gioco
@@ -173,6 +179,11 @@ const confirmFeedback = () => {
 };
 
 
+const toggleInfo = () => {
+      showInfo.value = !showInfo.value;
+    };
+
+
 
   
 const toggleSecretVisibility = () => {
@@ -199,6 +210,8 @@ const toggleSecretVisibility = () => {
         selectMode,
         selectColor,
         submitTurn,
+        showInfo,
+        toggleInfo,
       };
     },
   });
@@ -208,6 +221,14 @@ const toggleSecretVisibility = () => {
   <style scoped>
   .btn {
     @apply px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600;
+  }
+
+  .btn-mode {
+    @apply px-6 py-3 text-lg font-semibold rounded-lg transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-action {
+    @apply px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg transition-all duration-200 ease-in-out transform hover:bg-blue-600 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
   @keyframes bounce {
