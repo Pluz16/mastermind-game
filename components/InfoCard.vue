@@ -1,21 +1,22 @@
 <template>
     <transition name="fade">
-      <div v-if="showInfo" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">Regolamento del Gioco</h2>
-          <p class="text-gray-700 mb-2">
-            Scopo del gioco: Indovina la sequenza segreta di colori entro il numero di tentativi disponibili.
+      <div v-if="showInfo" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full shadow-2xl transform transition duration-300 scale-100 hover:scale-105">
+          <h2 class="text-2xl font-bold text-gray-800 mb-4">Regolamento del Gioco</h2>
+          <p class="text-gray-700 mb-4 leading-relaxed">
+            Indovina la sequenza segreta di colori entro il numero di tentativi disponibili.
           </p>
-          <ul class="list-disc list-inside text-gray-600 mb-4">
+          <ul class="list-disc list-inside text-gray-600 mb-4 space-y-2">
             <li>Seleziona una sequenza di 4 colori.</li>
             <li>Ricevi un feedback per ogni tentativo:</li>
-            <ul class="list-disc list-inside pl-4">
-              <li>Pallino bianco per colore giusto nella posizione corretta.</li>
-              <li>Pallino grigio per colore giusto ma nella posizione sbagliata.</li>
+            <ul class="list-disc list-inside pl-4 space-y-1">
+              <li><span class="text-green-500 font-semibold">Pallino bianco</span> per colore giusto nella posizione corretta.</li>
+              <li><span class="text-yellow-500 font-semibold">Pallino grigio</span> per colore giusto nella posizione sbagliata.</li>
             </ul>
           </ul>
-          <p class="text-gray-700">Usa il pulsante di "Reset Tentativo" se vuoi cambiare la sequenza corrente.</p>
-          <button @click="$emit('close')" class="btn mt-4 bg-red-500 text-white w-full">Chiudi</button>
+          <button @click="$emit('close')" class="w-full py-2 mt-4 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition duration-200">
+            Chiudi
+          </button>
         </div>
       </div>
     </transition>
@@ -37,7 +38,7 @@
   
   <style scoped>
   .fade-enter-active, .fade-leave-active {
-    transition: opacity 0.5s;
+    transition: opacity 0.3s ease;
   }
   .fade-enter, .fade-leave-to {
     opacity: 0;

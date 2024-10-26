@@ -14,12 +14,14 @@
         
         <!-- Feedback (Pallini Bianchi e Grigi) -->
         <div class="flex gap-1">
-          <div
-            v-for="(feedback, i) in attempt.feedback"
-            :key="i"
-            :class="['w-4 h-4 rounded-full border', feedback === 'correct' ? 'bg-white border-black' : 'bg-gray-500']"
-          ></div>
-        </div>
+  <div
+    v-for="(feedback, i) in attempt.feedback"
+    :key="i"
+    :class="feedback === 'correct' ? 'bg-white border-black' : feedback === 'misplaced' ? 'bg-gray-500' : ''"
+    class="w-4 h-4 rounded-full border"
+  ></div>
+</div>
+
       </div>
     </div>
   </template>
