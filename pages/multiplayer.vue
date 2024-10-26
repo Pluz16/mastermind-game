@@ -1,168 +1,177 @@
 <template>
-    <div class="flex flex-col items-center min-h-screen bg-gray-300 p-4">
+    <div class="flex flex-col items-center min-h-screen bg-gray-100 p-4">
       <h1 class="text-3xl font-bold mb-6">Mastermind - Modalità Multiplayer</h1>
   
-      <!-- Messaggio per identificare il turno corrente -->
-      <p v-if="turn === 'setup'" class="text-lg">Giocatore 1: Seleziona la sequenza segreta</p>
-      <p v-if="turn === 'guess'" class="text-lg">Giocatore 2: Prova a indovinare la sequenza</p>
-      <p v-if="turn === 'feedback'" class="text-lg">Giocatore 1: Fornisci il feedback</p>
-  
-      <!-- Selettore dei colori -->
-      <div v-if="turn === 'setup' || turn === 'guess'" class="flex gap-2 mt-6">
-        <button v-for="color in availableColors" :key="color" @click="selectColor(color)" :class="`w-10 h-10 rounded-full ${color}`"></button>
+      <!-- Selezione Modalità -->
+      <div v-if="turn === 'modeSelection'" class="flex gap-4 mt-4">
+        <button @click="selectMode(5, 15)" class="btn-large bg-blue-600 text-white">
+          Modalità 5 Colori - 15 Tentativi
+        </button>
+        <button @click="selectMode(8, 25)" class="btn-large bg-green-600 text-white">
+          Modalità 8 Colori - 25 Tentativi
+        </button>
       </div>
   
-      <!-- Visualizzazione del tentativo corrente -->
-      <div v-if="turn === 'setup' || turn === 'guess'" class="flex gap-2 mt-4">
-        <div v-for="(color, index) in currentAttempt" :key="index" :class="`w-8 h-8 rounded-full ${color}`"></div>
+      <!-- Selettore dei Colori -->
+      <ColorSelector v-if="turn === 'setup' || turn === 'guess'" :colors="availableColors" @colorSelected="selectColor" />
+  
+      <!-- Visualizzazione del Tentativo Corrente -->
+      <div v-if="currentAttempt.length > 0" class="flex gap-2 mt-4">
+        <div
+          v-for="(color, index) in currentAttempt"
+          :key="index"
+          :class="['w-8 h-8 rounded-full', color]"
+        ></div>
       </div>
-
-      <!--!-- Bottone per mostrare temporaneamente il codice segreto (solo nel turno di feedback) -->
-    <div v-if="turn === 'feedback'" class="flex flex-col items-center gap-2 mt-4">
-      <button @click="toggleSecretVisibility" class="btn mt-4">
-        {{ showSecretCode ? "Nascondi Codice" : "Mostra Codice" }}
+  
+      <!-- Pulsante per Confermare il Turno (mostrato durante setup o guess) -->
+      <button v-if="turn !== 'feedback'" @click="submitTurn" class="btn mt-4">
+        Conferma Turno
       </button>
-      <div v-if="showSecretCode" class="text-gray-700 mt-2">
-        <p>Codice Segreto: <span class="font-bold">{{ secretCode.join(", ") }}</span></p>
-      </div>
-    </div>
-
-    <!-- Componente Campo di Gioco (GameBoard) -->
-    <GameBoard :attempts="attempts" />
   
-      <!-- Bottone per confermare il turno -->
-      <button v-if="turn !== 'feedback'" @click="submitTurn" class="btn mt-4">Conferma</button>
+      <!-- Visualizzazione del Codice Segreto (solo durante feedback) -->
+      <SecretCodeDisplay :secretCode="secretCode" :showSecretCode="showSecretCode" />
   
-      <!-- Feedback manuale per il turno di feedback -->
-      <div v-if="turn === 'feedback'" class="flex flex-col items-center gap-2 mt-4">
-        <p class="text-lg font-semibold">Seleziona il feedback per il tentativo corrente</p>
-        <div class="flex gap-2">
-          <button @click="addFeedback('correct')" class="btn bg-white text-black">Corretti</button>
-          <button @click="addFeedback('misplaced')" class="btn bg-gray-500">Posizione Sbagliata</button>
-        </div>
+      <!-- Controllo del Feedback -->
+      <FeedbackControl v-if="turn === 'feedback'" @feedback="addFeedback" @confirmFeedback="confirmFeedback" @resetFeedback="resetFeedback" />
   
-        <!-- Mostra il feedback selezionato finora -->
-        <div class="flex gap-1 mt-2">
-          <div v-for="(feedback, i) in attempts[attempts.length - 1].feedback" :key="i" :class="feedback === 'correct' ? 'bg-white border-black' : 'bg-gray-500'" class="w-4 h-4 rounded-full border"></div>
-        </div>
-        <button @click="confirmFeedback" :disabled="!isFeedbackComplete" class="btn bg-blue-500 mt-2">Conferma Feedback</button>
-        <button @click="resetFeedback" class="btn bg-red-500 mt-2">Reset Feedback</button>
+      <!-- Componente Campo di Gioco (GameBoard) -->
+      <GameBoard :attempts="attempts" />
+  
+      <!-- Bottoni per Tornare alla Home e Ricominciare -->
+      <div class="flex gap-4 mt-6">
+        <button @click="restartGame" class="btn-large bg-red-600 text-white">Ricomincia</button>
+        <NuxtLink to="/" class="btn-large bg-gray-600 text-white">Torna alla Home</NuxtLink>
       </div>
   
-      <!-- Messaggio di errore -->
-      <p v-if="errorMessage" class="text-red-500 font-semibold">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-red-500 font-semibold mt-4">{{ errorMessage }}</p>
     </div>
   </template>
   
+  
   <script lang="ts">
-  import { defineComponent, ref, reactive, computed } from "vue";
+  import { defineComponent, ref, reactive } from "vue";
   import GameBoard from "../components/GameBoard.vue";
+  import ColorSelector from "../components/ColorSelector.vue";
+  import SecretCodeDisplay from "../components/SecretCodeDisplay.vue";
+  import FeedbackControl from "../components/FeedbackControl.vue";
   
   export default defineComponent({
-  name: "MultiplayerPage",
-  components: { GameBoard },
-  setup() {
-    const attempts = reactive<Array<{ colors: string[]; feedback: string[] }>>([]);
-    const currentAttempt = ref<string[]>([]);
-    const secretCode = ref<string[]>([]);
-    const turn = ref<"setup" | "guess" | "feedback">("setup");
-    const errorMessage = ref<string | null>(null);
-    const showSecretCode = ref(false);
+    name: "MultiplayerPage",
+    components: { GameBoard, ColorSelector, SecretCodeDisplay, FeedbackControl },
+    setup() {
+      const maxAttempts = ref(15);
+      const attempts = reactive<Array<{ colors: string[]; feedback: string[] }>>([]);
+      const availableColors = ref<string[]>(["bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-purple-500"]);
+      const secretCode = ref<string[]>([]);
+      const currentAttempt = ref<string[]>([]);
+      const turn = ref<"modeSelection" | "setup" | "guess" | "feedback">("modeSelection");
+      const showSecretCode = ref(false);
+      const errorMessage = ref<string | null>(null);
   
-      const selectColor = (color: string) => {
-        if (currentAttempt.value.length < 4) {
-          currentAttempt.value.push(color);
-          errorMessage.value = null;
-        } else {
-          errorMessage.value = "Hai già selezionato 4 colori!";
-        }
-      };
-
-      const availableColors = ref<string[]>([
-  "bg-red-500",
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-yellow-500",
-  "bg-purple-500",
-]);
-
-
-  
-      const submitTurn = () => {
-        if (turn.value === "setup" && currentAttempt.value.length === 4) {
-          secretCode.value = [...currentAttempt.value];
-          currentAttempt.value = [];
-          turn.value = "guess";
-        } else if (turn.value === "guess" && currentAttempt.value.length === 4) {
-          attempts.push({ colors: [...currentAttempt.value], feedback: [] });
-          currentAttempt.value = [];
-          turn.value = "feedback";
-        } else {
-          errorMessage.value = "Devi selezionare esattamente 4 colori!";
-        }
-      };
-  
-      const addFeedback = (type: "correct" | "misplaced") => {
-        const lastAttempt = attempts[attempts.length - 1];
-        if (lastAttempt && lastAttempt.feedback.length < 4) {
-          lastAttempt.feedback.push(type);
-          console.log(`Added feedback: ${type}`); // Log per debug
-          errorMessage.value = null;
-        } else {
-          errorMessage.value = "Hai già fornito il feedback completo!";
-        }
-      };
-  
-      const confirmFeedback = () => {
-        const lastAttempt = attempts[attempts.length - 1];
-        if (lastAttempt && lastAttempt.feedback.length === 4) {
-          turn.value = "guess"; // Prosegue al turno successivo
-          errorMessage.value = null;
-        } else {
-          errorMessage.value = "Devi fornire esattamente 4 feedback per confermare!";
-        }
-      };
-  
-      const resetFeedback = () => {
-        const lastAttempt = attempts[attempts.length - 1];
-        if (lastAttempt) {
-          lastAttempt.feedback = [];
-          errorMessage.value = null;
-        }
-      };
-  
-      const isFeedbackComplete = computed(() => {
-        const lastAttempt = attempts[attempts.length - 1];
-        return lastAttempt && lastAttempt.feedback.length === 4;
-      });
-
-       // Funzione per mostrare temporaneamente il codice segreto
-    const toggleSecretVisibility = () => {
-      if (turn.value === "feedback") {
-        showSecretCode.value = true;
-        setTimeout(() => (showSecretCode.value = false), 4000); // Nasconde il codice dopo 4 secondi
+      // Funzioni per gestire il gioco
+      const addFeedback = (feedbackType: string) => {
+      const lastAttempt = attempts[attempts.length - 1];
+      if (lastAttempt && lastAttempt.feedback.length < 4) {
+        lastAttempt.feedback.push(feedbackType);
+        errorMessage.value = null;
+      } else {
+        errorMessage.value = "Hai già fornito il feedback completo!";
       }
     };
   
-    return {
-  attempts,
-  availableColors,
-  currentAttempt,
-  secretCode,
-  turn,
-  errorMessage,
-  showSecretCode,
-  toggleSecretVisibility,
-  selectColor,
-  submitTurn,
-  addFeedback,
-  confirmFeedback,
-  isFeedbackComplete,
-  resetFeedback,
+    const confirmFeedback = () => {
+      const lastAttempt = attempts[attempts.length - 1];
+      if (lastAttempt && lastAttempt.feedback.length === 4) {
+        turn.value = "guess";
+        errorMessage.value = null;
+      } else {
+        errorMessage.value = "Devi fornire esattamente 4 feedback per confermare!";
+      }
+    };
+  
+      const resetFeedback = () => {
+        const lastAttempt = attempts[attempts.length - 1];
+        if (lastAttempt) lastAttempt.feedback = [];
+      };
+
+       // Funzione per selezionare il colore e aggiungerlo al tentativo corrente
+    const selectColor = (color: string) => {
+      if (currentAttempt.value.length < 4) {
+        currentAttempt.value.push(color);
+      } else {
+        errorMessage.value = "Hai già selezionato 4 colori!";
+      }
+    };
+  
+      const restartGame = () => {
+        attempts.splice(0, attempts.length);
+        currentAttempt.value = [];
+        secretCode.value = [];
+        turn.value = "modeSelection";
+        errorMessage.value = null;
+      };
+
+      // Funzione per iniziare la selezione del codice segreto
+    const selectMode = (colorCount: number, attemptsAllowed: number) => {
+      maxAttempts.value = attemptsAllowed;
+      availableColors.value = colorCount === 5
+        ? ["bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-purple-500"]
+        : ["bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-purple-500", "bg-orange-500", "bg-teal-500", "bg-pink-500"];
+      turn.value = "setup";
+      errorMessage.value = null;
+    };
+
+
+    const submitTurn = () => {
+  if (turn.value === "setup" && currentAttempt.value.length === 4) {
+    // Salva la sequenza segreta e passa al turno di guess
+    secretCode.value = [...currentAttempt.value];
+    currentAttempt.value = []; // Resetta il tentativo corrente
+    turn.value = "guess";
+  } else if (turn.value === "guess" && currentAttempt.value.length === 4) {
+    // Aggiunge il tentativo attuale agli attempts e passa a feedback
+    attempts.push({
+      colors: [...currentAttempt.value],
+      feedback: [],
+    });
+    currentAttempt.value = []; // Resetta il tentativo corrente
+    turn.value = "feedback";
+  } else {
+    errorMessage.value = "Devi selezionare esattamente 4 colori!";
+  }
 };
-    }
+
+
+
+  
+      const toggleSecretVisibility = () => {
+        showSecretCode.value = true;
+        setTimeout(() => (showSecretCode.value = false), 4000);
+      };
+  
+      return {
+        maxAttempts,
+        attempts,
+        availableColors,
+        currentAttempt,
+        secretCode,
+        turn,
+        errorMessage,
+        showSecretCode,
+        addFeedback,
+        confirmFeedback,
+        resetFeedback,
+        restartGame,
+        toggleSecretVisibility,
+        selectMode,
+        selectColor,
+        submitTurn,
+      };
+    },
   });
   </script>
+  
   
   <style scoped>
   .btn {
