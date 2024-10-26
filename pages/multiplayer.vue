@@ -2,6 +2,11 @@
     <div class="flex flex-col items-center min-h-screen bg-gray-100 p-4">
       <h1 class="text-3xl font-bold mb-6">Mastermind - Modalità Multiplayer</h1>
   
+      <!-- Messaggio di Turno -->
+      <p v-if="turn === 'setup'" class="text-lg text-gray-700">È il turno di Giocatore 1: Seleziona il codice segreto</p>
+      <p v-if="turn === 'guess'" class="text-lg text-gray-700">È il turno di Giocatore 2: Prova a indovinare la sequenza</p>
+      <p v-if="turn === 'feedback'" class="text-lg text-gray-700">È il turno di Giocatore 1: Fornisci il feedback</p>
+  
       <!-- Selezione Modalità -->
       <div v-if="turn === 'modeSelection'" class="flex gap-4 mt-4">
         <button @click="selectMode(5, 15)" class="btn-large bg-blue-600 text-white">
@@ -11,6 +16,10 @@
           Modalità 8 Colori - 25 Tentativi
         </button>
       </div>
+
+      <div v-if="turn === 'victory'" class="text-4xl font-bold text-green-500 victory-animation mt-8">
+  Congratulazioni! Hai Vinto!
+</div>
   
       <!-- Selettore dei Colori -->
       <ColorSelector v-if="turn === 'setup' || turn === 'guess'" :colors="availableColors" @colorSelected="selectColor" />
@@ -24,10 +33,15 @@
         ></div>
       </div>
   
-      <!-- Pulsante per Confermare il Turno (mostrato durante setup o guess) -->
-      <button v-if="turn !== 'feedback'" @click="submitTurn" class="btn mt-4">
+      <!-- Pulsante per Confermare il Turno (solo se i colori sono selezionati) -->
+      <button v-if="currentAttempt.length === 4 && (turn === 'setup' || turn === 'guess')" @click="submitTurn" class="btn mt-4">
         Conferma Turno
       </button>
+
+          <!-- Pulsante per visualizzare il codice segreto nel turno di feedback -->
+    <button v-if="turn === 'feedback'" @click="toggleSecretVisibility" class="btn mt-4">
+      {{ showSecretCode ? "Nascondi Codice" : "Mostra Codice" }}
+    </button>
   
       <!-- Visualizzazione del Codice Segreto (solo durante feedback) -->
       <SecretCodeDisplay :secretCode="secretCode" :showSecretCode="showSecretCode" />
@@ -36,7 +50,7 @@
       <FeedbackControl v-if="turn === 'feedback'" @feedback="addFeedback" @confirmFeedback="confirmFeedback" @resetFeedback="resetFeedback" />
   
       <!-- Componente Campo di Gioco (GameBoard) -->
-      <GameBoard :attempts="attempts" />
+      <GameBoard :attempts="attempts" :maxAttempts="maxAttempts" />
   
       <!-- Bottoni per Tornare alla Home e Ricominciare -->
       <div class="flex gap-4 mt-6">
@@ -47,6 +61,7 @@
       <p v-if="errorMessage" class="text-red-500 font-semibold mt-4">{{ errorMessage }}</p>
     </div>
   </template>
+  
   
   
   <script lang="ts">
@@ -65,30 +80,45 @@
       const availableColors = ref<string[]>(["bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-purple-500"]);
       const secretCode = ref<string[]>([]);
       const currentAttempt = ref<string[]>([]);
-      const turn = ref<"modeSelection" | "setup" | "guess" | "feedback">("modeSelection");
+        const turn = ref<"modeSelection" | "setup" | "guess" | "feedback" | "victory" | "defeat">("modeSelection");
       const showSecretCode = ref(false);
       const errorMessage = ref<string | null>(null);
+      
   
       // Funzioni per gestire il gioco
       const addFeedback = (feedbackType: string) => {
-      const lastAttempt = attempts[attempts.length - 1];
-      if (lastAttempt && lastAttempt.feedback.length < 4) {
-        lastAttempt.feedback.push(feedbackType);
-        errorMessage.value = null;
-      } else {
-        errorMessage.value = "Hai già fornito il feedback completo!";
-      }
-    };
+  const lastAttempt = attempts[attempts.length - 1];
+  if (lastAttempt && lastAttempt.feedback.length < 4) {
+    lastAttempt.feedback.push(feedbackType);
+    if (feedbackType === "none") {
+      lastAttempt.feedback = []; // Nessun pallino da mostrare
+    }
+    errorMessage.value = null;
+  } else {
+    errorMessage.value = "Hai già fornito il feedback completo!";
+  }
+};
   
-    const confirmFeedback = () => {
-      const lastAttempt = attempts[attempts.length - 1];
-      if (lastAttempt && lastAttempt.feedback.length === 4) {
-        turn.value = "guess";
-        errorMessage.value = null;
-      } else {
-        errorMessage.value = "Devi fornire esattamente 4 feedback per confermare!";
-      }
-    };
+const confirmFeedback = () => {
+  const lastAttempt = attempts[attempts.length - 1];
+  if (lastAttempt) {
+    // Se il feedback è vuoto o ha meno di 4 palline, è comunque accettato
+    turn.value = "guess"; 
+    errorMessage.value = null;
+
+    // Controllo della vittoria
+    if (lastAttempt.feedback.filter((f) => f === "correct").length === 4) {
+      turn.value = "victory"; // Attiva animazione di vittoria
+      setTimeout(() => restartGame(), 5000); // Reset dopo 5 secondi
+    } else if (attempts.length >= maxAttempts.value) {
+      turn.value = "defeat"; // Attiva animazione di sconfitta
+      setTimeout(() => restartGame(), 5000); // Reset dopo 5 secondi
+    }
+  }
+};
+
+
+
   
       const resetFeedback = () => {
         const lastAttempt = attempts[attempts.length - 1];
@@ -145,10 +175,12 @@
 
 
   
-      const toggleSecretVisibility = () => {
-        showSecretCode.value = true;
-        setTimeout(() => (showSecretCode.value = false), 4000);
-      };
+const toggleSecretVisibility = () => {
+  if (turn.value === "feedback") {
+    showSecretCode.value = true;
+    setTimeout(() => (showSecretCode.value = false), 4000);
+  }
+};
   
       return {
         maxAttempts,
@@ -177,5 +209,32 @@
   .btn {
     @apply px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600;
   }
+
+  @keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes victoryBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+.victory-animation {
+  animation: victoryBounce 1s ease-in-out infinite;
+}
+
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+.animate-pulse {
+  animation: pulse 1s infinite;
+}
   </style>
   

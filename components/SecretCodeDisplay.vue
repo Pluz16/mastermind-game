@@ -1,10 +1,10 @@
 <template>
-    <div v-if="showSecretCode" class="secret-code-container text-gray-700 mt-2">
+    <div v-if="showSecretCode" class="text-gray-700 mt-2">
       <div class="flex gap-1">
         <div
           v-for="(color, index) in secretCode"
           :key="index"
-          :class="['color-indicator', color]"
+          :class="['w-8 h-8 rounded-full shadow', color]"
         ></div>
       </div>
     </div>
@@ -29,11 +29,8 @@
   </script>
   
   <style scoped>
-  .secret-code-container {
-    @apply transition-opacity duration-300 ease-in-out; /* Graduale effetto di comparsa */
-  }
-  .color-indicator {
-    @apply w-8 h-8 rounded-full shadow-md;
+  .shadow {
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
   }
   </style>
   
